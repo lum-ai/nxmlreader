@@ -2,7 +2,7 @@ package ai.lum.nxmlreader
 
 import scala.xml._
 import scala.xml.transform.RewriteRule
-import scala.collection.mutable.LinkedHashMap
+import ai.lum.common.Interval
 
 class NxmlDocument(val root: Node) {
 
@@ -70,9 +70,7 @@ class NxmlDocument(val root: Node) {
     else ""
   }
 
-  def text: String = s"$title.\n\n\n$paperAbstract\n\n\n$paperBody"
-
-  def mkStandoff = {
+  private def mkStandoff() = {
     def populate(nodesWithPath: List[(String, Node)], results: List[(String, String)]): List[(String, String)] = nodesWithPath match {
       case (path, Text(string)) :: rest =>
         populate(rest, (path, string) :: results)
@@ -96,15 +94,30 @@ class NxmlDocument(val root: Node) {
     )
     val chunks = populate(start, Nil)
     var currIndex = 0
-    val ranges = chunks.map { tup =>
+    val standoff = chunks.map { tup =>
       val size = tup._2.length
-      val range = (currIndex, currIndex + size - 1)
+      val range = Interval.bySize(currIndex, size)
       currIndex += size
       (tup._1, range)
     }
     val text = chunks.map(_._2).mkString
-    (text, ranges)
+    (text, standoff)
   }
+
+  val (text, standoff) = mkStandoff()
+
+  def getOverlappingSections(i: Int): Seq[(String, Interval)] = {
+    getOverlappingSections(Interval(i))
+  }
+
+  def getOverlappingSections(start: Int, stop: Int): Seq[(String, Interval)] = {
+    getOverlappingSections(Interval(start, stop))
+  }
+
+  def getOverlappingSections(i: Interval): Seq[(String, Interval)] = for {
+    (name, interval) <- standoff
+    if i overlaps interval
+  } yield (name, interval)
 
 }
 
