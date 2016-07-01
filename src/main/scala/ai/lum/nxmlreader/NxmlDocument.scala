@@ -3,6 +3,7 @@ package ai.lum.nxmlreader
 import scala.xml._
 import scala.xml.transform.RewriteRule
 import ai.lum.common.Interval
+import ai.lum.nxmlreader.standoff._
 
 class NxmlDocument(val root: Node) {
 
@@ -70,54 +71,32 @@ class NxmlDocument(val root: Node) {
     else ""
   }
 
-  private def mkStandoff() = {
-    def populate(nodesWithPath: List[(String, Node)], results: List[(String, String)]): List[(String, String)] = nodesWithPath match {
-      case (path, Text(string)) :: rest =>
-        populate(rest, (path, string) :: results)
-      case (path, n) :: rest if n.label == "title" =>
-        populate(rest, (s"title $path", n.text) :: results)
-      case (path, n) :: rest if n.label == "p" =>
-        populate(rest, (s"p $path", n.text) :: results)
-      case (path, n) :: rest =>
-        val label = n.label
-        val newPath = if (path.isEmpty) label else s"$label $path"
-        val children = n.child.toList.map(c => (newPath, c))
-        populate(children ::: rest, results)
-      case Nil => results.reverse
+  private def mkStandoff(): Tree = {
+    def mkTree(node: Node, index: Int): Tree = node match {
+      case n @ Text(string) =>
+        Terminal(n.label, string, Interval.ofLength(index, string.length))
+      case n if n.label == "title" | n.label == "p" =>
+        val string = n.text
+        Terminal(n.label, string, Interval.ofLength(index, string.length))
+      case n =>
+        var idx = index
+        val children = for (c <- n.child.toList) yield {
+          val t = mkTree(c, idx)
+          idx = t.interval.end
+          t
+        }
+        NonTerminal(n.label, children)
     }
     val preprocess = new PreprocessNxml(Set("supplementary-material"))
     val newRoot = preprocess(root)
-    val start = List(
-      ("", (newRoot \\ "article-title").head),
-      ("", (newRoot \\ "abstract").head),
-      ("", (newRoot \\ "body").head)
-    )
-    val chunks = populate(start, Nil)
-    var currIndex = 0
-    val standoff = chunks.map { tup =>
-      val size = tup._2.length
-      val range = Interval.bySize(currIndex, size)
-      currIndex += size
-      (tup._1, range)
-    }
-    val text = chunks.map(_._2).mkString
-    (text, standoff)
+    val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
+    val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
+    val paperBody = mkTree((newRoot \\ "body").head, paperAbstract.interval.end)
+    NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
   }
 
-  val (text, standoff) = mkStandoff()
-
-  def getOverlappingSections(i: Int): Seq[(String, Interval)] = {
-    getOverlappingSections(Interval(i))
-  }
-
-  def getOverlappingSections(start: Int, stop: Int): Seq[(String, Interval)] = {
-    getOverlappingSections(Interval(start, stop))
-  }
-
-  def getOverlappingSections(i: Interval): Seq[(String, Interval)] = for {
-    (name, interval) <- standoff
-    if i overlaps interval
-  } yield (name, interval)
+  val standoff: Tree = mkStandoff()
+  def text = standoff.text
 
 }
 
