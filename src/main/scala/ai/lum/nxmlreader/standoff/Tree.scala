@@ -41,8 +41,10 @@ class NonTerminal(
     val children: List[Tree]
 ) extends Tree {
 
+  require(children.nonEmpty, "children list is empty")
   require(children.forall(_.parent.isEmpty), "children already have a parent")
 
+  // set children's parent to self
   children.foreach(_._parent = Some(this))
 
   val interval: Interval = Interval.union(children.map(_.interval))
