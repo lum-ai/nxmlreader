@@ -1,9 +1,9 @@
 package ai.lum.nxmlreader
 
 import scala.xml._
-import scala.xml.transform.RewriteRule
 import ai.lum.common.Interval
 import ai.lum.nxmlreader.standoff._
+
 
 class NxmlDocument(val root: Node) {
 
@@ -60,8 +60,10 @@ class NxmlDocument(val root: Node) {
     authors = (ref \ "mixed-citation" \ "person-group" \ "name").map(n => Author((n \ "surname").text, (n \ "given-names").text))
   } yield Reference(id, label.text, title.text, authors, PubId(pubId \@ "pub-id-type", pubId.text))
 
+  // FIXME: is there any other way to avoid making an new XMLPreprocessor?
+  // perhaps we should make the preprocessor instance a param to the NXMLDocument constructor?
   def getTextFrom(node: Node): String = {
-    val preprocess = new PreprocessNxml(Set("supplementary-material"))
+    val preprocess = NXMLPreprocessor(Set("supplementary-material"))
     preprocess(node).text
   }
 
@@ -71,7 +73,12 @@ class NxmlDocument(val root: Node) {
     else ""
   }
 
-  private def mkStandoff(): Tree = {
+
+  def mkStandoff(sectionsToIgnore: Set[String], keepFloats: Boolean = false): Tree = {
+    mkStandoff(sectionsToIgnore, keepFloats)
+  }
+
+  def mkStandoff(preprocessor: Preprocessor): Tree = {
     def mkTree(node: Node, index: Int): Tree = node match {
       case n @ Text(string) =>
         new Terminal(n.label, string, Interval.ofLength(index, string.length))
@@ -87,31 +94,21 @@ class NxmlDocument(val root: Node) {
         }
         new NonTerminal(n.label, children)
     }
-    val preprocess = new PreprocessNxml(Set("supplementary-material"))
-    val newRoot = preprocess(root)
+    val newRoot = preprocessor(root)
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
     val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
     val paperBody = mkTree((newRoot \\ "body").head, paperAbstract.interval.end)
     new NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
   }
 
+  def mkStandoff(): Tree = {
+    mkStandoff(NXMLPreprocessor(Set("supplementary-material")))
+  }
+
   val standoff: Tree = mkStandoff()
   def text = standoff.text
 
 }
-
-// class Section {
-//   // def type: Option[String]
-//   def title: String
-//   def paragraphs: Seq[String]
-//   def sections: Seq[Section]
-//   def text: String
-// }
-
-// class Figure {
-//   def label: String
-//   def caption: String
-//
 
 case class PubDate(day: Option[Int], month: Option[Int], year: Int, pubType: String)
 
@@ -125,66 +122,3 @@ case class Figure(id: String, label: String, caption: String)
 
 case class Table(id: String, label: String, caption: String, xhtml: Node)
 
-class PreprocessNxml(
-    val sectionsToIgnore: Set[String] = Set.empty,
-    val ignoreFloats: Boolean = true
-) extends RewriteRule {
-
-  // surrounds sup/sub content with spaces
-  override def transform(n: Node): Seq[Node] = n match {
-    // surround subscripts and superscripts with spaces
-    case <sup>{text}</sup> => <sup> {text} </sup>
-    case <sub>{text}</sub> => <sub> {text} </sub>
-    // append dots to title and surround it with newlines
-    case e: Elem if e.label == "article-title" =>
-      val e2 = transformChildren(e)
-      val txt = Text(s"${e2.text}.\n\n")
-      <article-title>{txt}</article-title>
-    case e: Elem if e.label == "abstract" =>
-      val e2 = transformChildren(e)
-      val txt = Text(s"\n\n${e2.text}\n\n")
-      <abstract>{txt}</abstract>
-    case e: Elem if e.label == "title" =>
-      val e2 = transformChildren(e)
-      val txt = Text(s"\n\n${e2.text}.\n\n")
-      <title>{txt}</title>
-    // append newlines to paragraphs
-    case e: Elem if e.label == "p" =>
-      val e2 = transformChildren(e)
-      val txt = Text(s"${e2.text}\n\n")
-      <p>{txt}</p>
-    // remove floats
-    case e: Elem if ignoreFloats && attr(e, "position", "float") => Nil
-    // remove some sections
-    case e: Elem if attr(e, "sec-type", sectionsToIgnore) => Nil
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text("XREF_BIBR")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text("XREF_FIG")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text("XREF_TABLE")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text("XREF_SUPPLEMENTARY")
-    // recurse
-    case e: Elem => transformChildren(e)
-    // return unmodified
-    case other => other
-  }
-
-  def transformChildren(e: Elem): Seq[Node] = {
-    e.copy(child = e.child.flatMap(this.transform))
-  }
-
-  def transformChildren(e: Elem, append: Node): Seq[Node] = {
-    e.copy(child = e.child.flatMap(this.transform) :+ append)
-  }
-
-  def transformChildren(e: Elem, prepend: Node, append: Node): Seq[Node] = {
-    e.copy(child = prepend +: e.child.flatMap(this.transform) :+ append)
-  }
-
-  def attr(e: Elem, name: String, value: String): Boolean = {
-    e.attribute(name).map(_.text == value).getOrElse(false)
-  }
-
-  def attr(e: Elem, name: String, values: Set[String]): Boolean = {
-    e.attribute(name).map(values contains _.text).getOrElse(false)
-  }
-
-}
