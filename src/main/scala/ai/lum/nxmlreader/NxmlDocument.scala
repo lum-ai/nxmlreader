@@ -146,7 +146,7 @@ class PreprocessNxml(
       <abstract>{txt}</abstract>
     case e: Elem if e.label == "title" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"\n\n${e2.text}\n\n")
+      val txt = Text(s"\n\n${e2.text}.\n\n")
       <title>{txt}</title>
     // append newlines to paragraphs
     case e: Elem if e.label == "p" =>
