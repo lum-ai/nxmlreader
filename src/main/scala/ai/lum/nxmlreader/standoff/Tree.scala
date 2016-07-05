@@ -22,6 +22,10 @@ sealed trait Tree {
     getTerminals(Interval.open(start, end))
   }
 
+  def getTerminals(): List[Terminal] = {
+    getTerminals(interval)
+  }
+
   def root: Tree = parent match {
     case None => this
     case Some(p) => p.root
