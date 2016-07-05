@@ -74,10 +74,10 @@ class NxmlDocument(val root: Node) {
   private def mkStandoff(): Tree = {
     def mkTree(node: Node, index: Int): Tree = node match {
       case n @ Text(string) =>
-        Terminal(n.label, string, Interval.ofLength(index, string.length))
+        new Terminal(n.label, string, Interval.ofLength(index, string.length))
       case n if n.label == "title" | n.label == "p" =>
         val string = n.text
-        Terminal(n.label, string, Interval.ofLength(index, string.length))
+        new Terminal(n.label, string, Interval.ofLength(index, string.length))
       case n =>
         var idx = index
         val children = for (c <- n.child.toList) yield {
@@ -85,14 +85,14 @@ class NxmlDocument(val root: Node) {
           idx = t.interval.end
           t
         }
-        NonTerminal(n.label, children)
+        new NonTerminal(n.label, children)
     }
     val preprocess = new PreprocessNxml(Set("supplementary-material"))
     val newRoot = preprocess(root)
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
     val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
     val paperBody = mkTree((newRoot \\ "body").head, paperAbstract.interval.end)
-    NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
+    new NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
   }
 
   val standoff: Tree = mkStandoff()
