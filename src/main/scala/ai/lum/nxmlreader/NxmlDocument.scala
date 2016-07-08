@@ -5,7 +5,7 @@ import ai.lum.common.Interval
 import ai.lum.nxmlreader.standoff._
 
 
-class NxmlDocument(val root: Node) {
+class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
 
   def articleMeta: Node = (root \ "front" \ "article-meta").head
 
@@ -60,11 +60,8 @@ class NxmlDocument(val root: Node) {
     authors = (ref \ "mixed-citation" \ "person-group" \ "name").map(n => Author((n \ "surname").text, (n \ "given-names").text))
   } yield Reference(id, label.text, title.text, authors, PubId(pubId \@ "pub-id-type", pubId.text))
 
-  // FIXME: is there any other way to avoid making an new XMLPreprocessor?
-  // perhaps we should make the preprocessor instance a param to the NXMLDocument constructor?
   def getTextFrom(node: Node): String = {
-    val preprocess = NXMLPreprocessor(Set("supplementary-material"))
-    preprocess(node).text
+    preprocessor(node).text
   }
 
   def paperBody: String = {
@@ -73,12 +70,7 @@ class NxmlDocument(val root: Node) {
     else ""
   }
 
-
-  def mkStandoff(sectionsToIgnore: Set[String], keepFloats: Boolean = false): Tree = {
-    mkStandoff(sectionsToIgnore, keepFloats)
-  }
-
-  def mkStandoff(preprocessor: Preprocessor): Tree = {
+  def mkStandoff(): Tree = {
     def mkTree(node: Node, index: Int): Tree = node match {
       case n @ Text(string) =>
         new Terminal(n.label, string, Interval.ofLength(index, string.length))
@@ -99,10 +91,6 @@ class NxmlDocument(val root: Node) {
     val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
     val paperBody = mkTree((newRoot \\ "body").head, paperAbstract.interval.end)
     new NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
-  }
-
-  def mkStandoff(): Tree = {
-    mkStandoff(NXMLPreprocessor(Set("supplementary-material")))
   }
 
   val standoff: Tree = mkStandoff()
