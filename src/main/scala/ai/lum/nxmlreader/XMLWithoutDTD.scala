@@ -4,6 +4,7 @@ import scala.xml.Elem
 import scala.xml.factory.XMLLoader
 import javax.xml.parsers.{ SAXParser, SAXParserFactory }
 
+
 /** Reads an XML file and ignores DTD */
 object XMLWithoutDTD extends XMLLoader[Elem] {
   override def parser: SAXParser = {

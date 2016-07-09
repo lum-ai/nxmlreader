@@ -4,6 +4,7 @@ import java.io.{ File, InputStream, Reader }
 import scala.xml._
 import scala.xml.transform.RewriteRule
 
+
 class NxmlReader(val preprocessor: Preprocessor) {
   def this(sectionsToIgnore: Set[String], ignoreFloats: Boolean) = this(new NXMLPreprocessor(sectionsToIgnore, ignoreFloats))
   def this(sectionsToIgnore: Set[String]) = this(new NXMLPreprocessor(sectionsToIgnore, true))

@@ -2,6 +2,7 @@ package ai.lum.nxmlreader.standoff
 
 import ai.lum.common.Interval
 
+
 sealed trait Tree {
 
   private[standoff] var _parent: Option[Tree] = None
