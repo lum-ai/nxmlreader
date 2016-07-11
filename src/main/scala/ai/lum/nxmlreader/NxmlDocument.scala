@@ -89,8 +89,10 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     val newRoot = preprocessor(root)
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
     val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
-    val paperBody = mkTree((newRoot \\ "body").head, paperAbstract.interval.end)
-    new NonTerminal("doc", List(paperTitle, paperAbstract, paperBody))
+    // sometimes the body is missing
+    val paperBodyOption = (newRoot \\ "body").headOption.map(mkTree(_, paperAbstract.interval.end))
+    val children = List(paperTitle, paperAbstract) ::: paperBodyOption.map(List(_)).getOrElse(Nil)
+    new NonTerminal("doc", children)
   }
 
   val standoff: Tree = mkStandoff()
