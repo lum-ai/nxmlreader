@@ -7,7 +7,7 @@ import ai.lum.nxmlreader.standoff._
 
 class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
 
-  def articleMeta: Node = (root \ "front" \ "article-meta").head
+  def articleMeta: Node = (root \\ "front" \ "article-meta").head
 
   def getIdByType(idType: String): String = {
     (articleMeta \ "article-id").filter(_ \@ "pub-id-type" == idType).text
