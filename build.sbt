@@ -1,6 +1,6 @@
 name := "nxmlreader"
 
-version := "0.1-SNAPSHOT"
+version := "0.0.1"
 
 organization := "ai.lum"
 
@@ -30,23 +30,27 @@ publishArtifact in Test := false
 
 pomIncludeRepository := { _ => false }
 
-pomExtra := (
+pomExtra :=
   <url>https://github.com/lum-ai/nxmlreader</url>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      </license>
-    </licenses>
-    <scm>
-      <url>scm:git:github.com/lum-ai/nxmlreader</url>
-      <connection>scm:git:git@github.com:lum-ai/nxmlreader.git</connection>
-    </scm>
-    <developers>
-      <developer>
-        <id>lum-ai-dev-role</id>
-        <name>lum.ai</name>
-        <url>lum.ai</url>
-      </developer>
-    </developers>
-  )
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <scm>
+    <url>scm:git:github.com/lum-ai/nxmlreader</url>
+    <connection>scm:git:git@github.com:lum-ai/nxmlreader.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>marcovzla</id>
+      <name>Marco Antonio Valenzuela Escárcega</name>
+      <url>lum.ai</url>
+    </developer>
+    <developer>
+      <id>ghp</id>
+      <name>Gus Hahn-Powell</name>
+      <url>lum.ai</url>
+    </developer>
+  </developers>
