@@ -84,7 +84,9 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
           idx = t.interval.end
           t
         }
-        new NonTerminal(n.label, children)
+        // Keep track of the tag's attributes as a Map[String, String]
+        val attributes = n.attributes.map(b => (b.key -> b.value.text)).toMap
+        new NonTerminal(n.label, children, attributes)
     }
     val newRoot = preprocessor(root)
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
@@ -92,7 +94,7 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     // sometimes the body is missing
     val paperBodyOption = (newRoot \\ "body").headOption.map(mkTree(_, paperAbstract.interval.end))
     val children = List(paperTitle, paperAbstract) ::: paperBodyOption.map(List(_)).getOrElse(Nil)
-    new NonTerminal("doc", children)
+    new NonTerminal("doc", children, Map())
   }
 
   val standoff: Tree = mkStandoff()
@@ -111,4 +113,3 @@ case class Author(surname: String, givenNames: String)
 case class Figure(id: String, label: String, caption: String)
 
 case class Table(id: String, label: String, caption: String, xhtml: Node)
-
