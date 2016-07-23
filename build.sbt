@@ -1,7 +1,5 @@
 name := "nxmlreader"
 
-version := "0.0.1"
-
 organization := "ai.lum"
 
 scalaVersion := "2.11.8"
@@ -13,6 +11,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.5"
 )
 
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 // Publishing settings
 
