@@ -12,6 +12,7 @@ sealed trait Tree {
   def text: String
   def interval: Interval
   def children: List[Tree]
+  def attributes: Map[String, String]
   def copy(): Tree
   def getTerminals(i: Interval): List[Terminal]
 
@@ -43,7 +44,8 @@ sealed trait Tree {
 
 class NonTerminal(
     val label: String,
-    val children: List[Tree]
+    val children: List[Tree],
+    val attributes: Map[String, String]
 ) extends Tree {
 
   require(children.nonEmpty, "children list is empty")
@@ -56,7 +58,7 @@ class NonTerminal(
 
   def text: String = children.map(_.text).mkString
 
-  def copy(): Tree = new NonTerminal(label, children.map(_.copy()))
+  def copy(): Tree = new NonTerminal(label, children.map(_.copy()), attributes)
 
   def getTerminals(i: Interval): List[Terminal] = {
     if (i intersects interval) {
@@ -78,6 +80,7 @@ class Terminal(
 ) extends Tree {
 
   val children: List[Tree] = Nil
+  val attributes: Map[String, String] = Map()
 
   def copy(): Tree = new Terminal(label, text, interval)
 
