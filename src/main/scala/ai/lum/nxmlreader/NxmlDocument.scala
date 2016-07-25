@@ -90,10 +90,13 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     }
     val newRoot = preprocessor(root)
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
-    val paperAbstract = mkTree((newRoot \\ "abstract").head, paperTitle.interval.end)
+    // some papers don't have an abstract
+    val paperAbstractOption = (newRoot \\ "abstract").headOption.map(mkTree(_, paperTitle.interval.end))
+    // next start is the end of the abstract if there is one, or the end of the title
+    val nextStart = paperAbstractOption.map(_.interval.end).getOrElse(paperTitle.interval.end)
     // sometimes the body is missing
-    val paperBodyOption = (newRoot \\ "body").headOption.map(mkTree(_, paperAbstract.interval.end))
-    val children = List(paperTitle, paperAbstract) ::: paperBodyOption.map(List(_)).getOrElse(Nil)
+    val paperBodyOption = (newRoot \\ "body").headOption.map(mkTree(_, nextStart))
+    val children = paperTitle :: paperAbstractOption.map(List(_)).getOrElse(Nil) ::: paperBodyOption.map(List(_)).getOrElse(Nil)
     new NonTerminal("doc", children, Map())
   }
 
