@@ -13,39 +13,56 @@ case class NXMLPreprocessor(
 
   // surrounds sup/sub content with spaces
   override def transform(n: Node): Seq[Node] = n match {
+
+    // handle tag representing a line break
+    case <break/> => Text("\n")
+
     // surround subscripts and superscripts with spaces
     case <sup>{text}</sup> => <sup> {text} </sup>
     case <sub>{text}</sub> => <sub> {text} </sub>
+
     // append dots to title and surround it with newlines
     case e: Elem if e.label == "article-title" =>
       val e2 = transformChildren(e)
       val txt = Text(s"${e2.text}.\n\n")
       <article-title>{txt}</article-title>
+
     case e: Elem if e.label == "abstract" =>
       val e2 = transformChildren(e)
       val txt = Text(s"\n\n${e2.text}\n\n")
       <abstract>{txt}</abstract>
+
     case e: Elem if e.label == "title" =>
       val e2 = transformChildren(e)
       val txt = Text(s"\n\n${e2.text}.\n\n")
       <title>{txt}</title>
+
     // append newlines to paragraphs
     case e: Elem if e.label == "p" =>
       val e2 = transformChildren(e)
       val txt = Text(s"${e2.text}\n\n")
       <p>{txt}</p>
+
     // remove floats
     case e: Elem if ignoreFloats && attr(e, "position", "float") => Nil
+
+    // NOTE we are removing graphics that are not floats too
+    // maybe we need to ignore tables and figures instead of floats?
+    case e: Elem if e.label == "fig" => Nil
+
     // remove some sections
     case e: Elem if attr(e, "sec-type", sectionsToIgnore) => Nil
     case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text(NXMLPreprocessor.BIBR)
     case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text(NXMLPreprocessor.FIG)
     case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text(NXMLPreprocessor.TABLE)
     case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text(NXMLPreprocessor.SUPPL)
+
     // recurse
     case e: Elem => transformChildren(e)
+
     // return unmodified
     case other => other
+
   }
 
   def transformChildren(e: Elem): Seq[Node] = {
