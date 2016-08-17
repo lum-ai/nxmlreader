@@ -71,31 +71,40 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
   }
 
   def mkStandoff(): Tree = {
-    def mkTree(node: Node, index: Int): Tree = node match {
+    def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
-        new Terminal(n.label, string, Interval.ofLength(index, string.length))
+        Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
       case n if n.label == "title" | n.label == "p" =>
         val string = n.text
-        new Terminal(n.label, string, Interval.ofLength(index, string.length))
+        Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
+      case n if n.child.isEmpty =>
+        // if nonterminal has no children, don't make a tree node
+        None
       case n =>
         var idx = index
-        val children = for (c <- n.child.toList) yield {
+        val children = n.child.toList.flatMap { c =>
           val t = mkTree(c, idx)
-          idx = t.interval.end
+          if (t.isDefined) {
+            idx = t.get.interval.end
+          }
           t
         }
+        if (children.isEmpty) return None
         // Keep track of the tag's attributes as a Map[String, String]
         val attributes = n.attributes.map(b => (b.key -> b.value.text)).toMap
-        new NonTerminal(n.label, children, attributes)
+        Some(new NonTerminal(n.label, children, attributes))
     }
     val newRoot = preprocessor(root)
-    val paperTitle = mkTree((newRoot \\ "article-title").head, 0)
+    // here i am assuming that papers *always* have a title
+    val paperTitle = mkTree((newRoot \\ "article-title").head, 0).get
     // some papers don't have an abstract
-    val paperAbstractOption = (newRoot \\ "abstract").headOption.map(mkTree(_, paperTitle.interval.end))
+    // also, mkTree returns an Option, that is why we use flatMap
+    val paperAbstractOption = (newRoot \\ "abstract").headOption.flatMap(mkTree(_, paperTitle.interval.end))
     // next start is the end of the abstract if there is one, or the end of the title
     val nextStart = paperAbstractOption.map(_.interval.end).getOrElse(paperTitle.interval.end)
     // sometimes the body is missing
-    val paperBodyOption = (newRoot \\ "body").headOption.map(mkTree(_, nextStart))
+    // sometimes the body is empty, this is handled by mkTree returning None
+    val paperBodyOption = (newRoot \\ "body").headOption.flatMap(mkTree(_, nextStart))
     val children = paperTitle :: paperAbstractOption.map(List(_)).getOrElse(Nil) ::: paperBodyOption.map(List(_)).getOrElse(Nil)
     new NonTerminal("doc", children, Map())
   }
