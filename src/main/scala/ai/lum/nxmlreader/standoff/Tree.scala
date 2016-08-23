@@ -1,5 +1,8 @@
 package ai.lum.nxmlreader.standoff
 
+import org.json4s._
+import org.json4s.native.JsonMethods._
+import org.json4s.JsonDSL._
 import ai.lum.common.Interval
 
 
@@ -15,6 +18,7 @@ sealed trait Tree {
   def attributes: Map[String, String]
   def copy(): Tree
   def getTerminals(i: Interval): List[Terminal]
+  def toJson: JObject
 
   def getTerminals(i: Int): List[Terminal] = {
     getTerminals(Interval.singleton(i))
@@ -39,6 +43,8 @@ sealed trait Tree {
   }
 
   def path: String = ancestors.map(_.label).mkString(" ")
+
+  def printJson: String = compact(render(this.toJson))
 
 }
 
@@ -71,6 +77,13 @@ class NonTerminal(
     }
   }
 
+  def toJson: JObject = {
+    // Create a dictionary to be rendered as JSON
+    ("label" -> this.label) ~
+    ("attributes" -> this.attributes) ~
+    ("children" -> this.children.map(_.toJson))
+  }
+
 }
 
 class Terminal(
@@ -86,6 +99,14 @@ class Terminal(
 
   def getTerminals(i: Interval): List[Terminal] = {
     if (i intersects interval) List(this) else Nil
+  }
+
+  def toJson: JObject = {
+    // Create a dictionary to be rendered as JSON
+    ("label" -> this.label) ~
+    ("text" -> this.text) ~
+    ("start" -> this.interval.start) ~
+    ("end" -> this.interval.end)
   }
 
 }
