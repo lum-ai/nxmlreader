@@ -44,7 +44,7 @@ sealed trait Tree {
 
   def path: String = ancestors.map(_.label).mkString(" ")
 
-  def printJson: String = compact(render(this.toJson))
+  def printJson: String = pretty(render(this.toJson))
 
 }
 
@@ -107,6 +107,44 @@ class Terminal(
     ("text" -> this.text) ~
     ("start" -> this.interval.start) ~
     ("end" -> this.interval.end)
+  }
+
+}
+
+// Companion object to keep the json deserialization code
+object Tree {
+
+  implicit lazy val formats = DefaultFormats
+
+  def parseJson(txt:String):Tree = {
+
+    def parseHelper(elem:JObject):Tree ={
+      // Figure out if this isn't a terminal object
+      if(elem.obj.exists(f => f._1 == "children")){
+        // This is an internal node in the AST
+        new NonTerminal(
+          (elem \ "label").extract[String],
+          (elem \ "children").extract[List[JObject]].map(parseHelper),
+          (elem \ "attributes").extract[Map[String, String]]
+        )
+      }
+      else{
+        // This is a terminal in the AST
+        new Terminal(
+          (elem \ "label").extract[String],
+          (elem \ "text").extract[String],
+          Interval.open((elem \ "start").extract[Int], (elem \ "end").extract[Int])
+        )
+      }
+    }
+
+    val json = parse(txt).asInstanceOf[JObject]
+    parseHelper(json)
+  }
+
+  def readJson(path:String):Tree = {
+    val json = io.Source.fromFile(path).getLines.mkString("\n")
+    parseJson(json)
   }
 
 }
