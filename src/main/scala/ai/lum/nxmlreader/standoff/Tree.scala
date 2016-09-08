@@ -143,7 +143,9 @@ object Tree {
   }
 
   def readJson(path:String):Tree = {
-    val json = io.Source.fromFile(path).getLines.mkString("\n")
+    val source = io.Source.fromFile(path)
+    val json = source.getLines.mkString("\n")
+    source.close
     parseJson(json)
   }
 
