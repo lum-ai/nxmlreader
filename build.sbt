@@ -10,7 +10,8 @@ scalacOptions ++= Seq("-feature", "-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
   "ai.lum" %% "common" % "0.0.1",
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.5"
+  "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
+  "org.json4s" %% "json4s-native" % "3.4.0"
 )
 
 releaseProcess := Seq[ReleaseStep](

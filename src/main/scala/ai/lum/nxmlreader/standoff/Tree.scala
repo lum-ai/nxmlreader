@@ -1,5 +1,8 @@
 package ai.lum.nxmlreader.standoff
 
+import org.json4s._
+import org.json4s.native.JsonMethods._
+import org.json4s.JsonDSL._
 import ai.lum.common.Interval
 
 
@@ -15,6 +18,7 @@ sealed trait Tree {
   def attributes: Map[String, String]
   def copy(): Tree
   def getTerminals(i: Interval): List[Terminal]
+  def toJson: JObject
 
   def getTerminals(i: Int): List[Terminal] = {
     getTerminals(Interval.singleton(i))
@@ -39,6 +43,8 @@ sealed trait Tree {
   }
 
   def path: String = ancestors.map(_.label).mkString(" ")
+
+  def printJson: String = pretty(render(this.toJson))
 
 }
 
@@ -71,6 +77,13 @@ class NonTerminal(
     }
   }
 
+  def toJson: JObject = {
+    // Create a dictionary to be rendered as JSON
+    ("label" -> this.label) ~
+    ("attributes" -> this.attributes) ~
+    ("children" -> this.children.map(_.toJson))
+  }
+
 }
 
 class Terminal(
@@ -86,6 +99,54 @@ class Terminal(
 
   def getTerminals(i: Interval): List[Terminal] = {
     if (i intersects interval) List(this) else Nil
+  }
+
+  def toJson: JObject = {
+    // Create a dictionary to be rendered as JSON
+    ("label" -> this.label) ~
+    ("text" -> this.text) ~
+    ("start" -> this.interval.start) ~
+    ("end" -> this.interval.end)
+  }
+
+}
+
+// Companion object to keep the json deserialization code
+object Tree {
+
+  implicit lazy val formats = DefaultFormats
+
+  def parseJson(txt:String):Tree = {
+
+    def parseHelper(elem:JObject):Tree ={
+      // Figure out if this isn't a terminal object
+      if(elem.obj.exists(f => f._1 == "children")){
+        // This is an internal node in the AST
+        new NonTerminal(
+          (elem \ "label").extract[String],
+          (elem \ "children").extract[List[JObject]].map(parseHelper),
+          (elem \ "attributes").extract[Map[String, String]]
+        )
+      }
+      else{
+        // This is a terminal in the AST
+        new Terminal(
+          (elem \ "label").extract[String],
+          (elem \ "text").extract[String],
+          Interval.open((elem \ "start").extract[Int], (elem \ "end").extract[Int])
+        )
+      }
+    }
+
+    val json = parse(txt).asInstanceOf[JObject]
+    parseHelper(json)
+  }
+
+  def readJson(path:String):Tree = {
+    val source = io.Source.fromFile(path)
+    val json = source.getLines.mkString("\n")
+    source.close
+    parseJson(json)
   }
 
 }
