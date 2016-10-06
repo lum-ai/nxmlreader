@@ -6,9 +6,11 @@ import scala.xml.transform.RewriteRule
 
 
 class NxmlReader(val preprocessor: Preprocessor) {
-  def this(sectionsToIgnore: Set[String], ignoreFloats: Boolean) = this(new NXMLPreprocessor(sectionsToIgnore, ignoreFloats))
-  def this(sectionsToIgnore: Set[String]) = this(new NXMLPreprocessor(sectionsToIgnore, true))
-  def this() = this(new NXMLPreprocessor(Set.empty, true))
+  def this(
+      sectionsToIgnore: Set[String] = Set.empty,
+      ignoreFloats: Boolean = true,
+      transformText: String => String = identity
+  ) = this(new NXMLPreprocessor(sectionsToIgnore, ignoreFloats, transformText))
 
   def parse(string: String): NxmlDocument = new NxmlDocument(XMLWithoutDTD.loadString(string), preprocessor)
   def read(name: String): NxmlDocument = new NxmlDocument(XMLWithoutDTD.loadFile(name), preprocessor)

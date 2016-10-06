@@ -8,7 +8,8 @@ trait Preprocessor extends RewriteRule
 
 case class NXMLPreprocessor(
   sectionsToIgnore: Set[String],
-  ignoreFloats: Boolean
+  ignoreFloats: Boolean,
+  transformText: String => String
 ) extends Preprocessor {
 
   // surrounds sup/sub content with spaces
@@ -18,29 +19,29 @@ case class NXMLPreprocessor(
     case <break/> => Text("\n")
 
     // surround subscripts and superscripts with spaces
-    case <sup>{text}</sup> => <sup> {text} </sup>
-    case <sub>{text}</sub> => <sub> {text} </sub>
+    case <sup>{text}</sup> => <sup> {transformText(text.text)} </sup>
+    case <sub>{text}</sub> => <sub> {transformText(text.text)} </sub>
 
     // append dots to title and surround it with newlines
     case e: Elem if e.label == "article-title" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"${e2.text}.\n\n")
+      val txt = Text(s"${transformText(e2.text)}.\n\n")
       <article-title>{txt}</article-title>
 
     case e: Elem if e.label == "abstract" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"\n\n${e2.text}\n\n")
+      val txt = Text(s"\n\n${transformText(e2.text)}\n\n")
       <abstract>{txt}</abstract>
 
     case e: Elem if e.label == "title" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"\n\n${e2.text}.\n\n")
+      val txt = Text(s"\n\n${transformText(e2.text)}.\n\n")
       <title>{txt}</title>
 
     // append newlines to paragraphs
     case e: Elem if e.label == "p" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"${e2.text}\n\n")
+      val txt = Text(s"${transformText(e2.text)}\n\n")
       <p>{txt}</p>
 
     // remove floats
@@ -93,6 +94,4 @@ object NXMLPreprocessor extends Preprocessor {
   val FIG = "XREF_FIG" // replaces a figure
   val TABLE = "XREF_TABLE" // replaces a table
   val SUPPL = "XREF_SUPPLEMENTARY" // replaces a supplementary material section
-  def apply(): NXMLPreprocessor = new NXMLPreprocessor(sectionsToIgnore = Set.empty, ignoreFloats = true)
-  def apply(s2i: Set[String]): NXMLPreprocessor = new NXMLPreprocessor(sectionsToIgnore = s2i, ignoreFloats = true)
 }
