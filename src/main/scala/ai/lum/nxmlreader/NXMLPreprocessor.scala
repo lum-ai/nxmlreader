@@ -52,10 +52,12 @@ case class NXMLPreprocessor(
 
     // remove some sections
     case e: Elem if sectionsToIgnore.contains(e.label) | attr(e, "sec-type", sectionsToIgnore) => Nil
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text(NXMLPreprocessor.BIBR)
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text(NXMLPreprocessor.FIG)
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text(NXMLPreprocessor.TABLE)
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text(NXMLPreprocessor.SUPPL)
+
+    // surround replacements with spaces
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text(" " + NXMLPreprocessor.BIBR + " ")
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text(" " + NXMLPreprocessor.FIG + " ")
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text(" " + NXMLPreprocessor.TABLE + " ")
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text(" " + NXMLPreprocessor.SUPPL + " ")
 
     // recurse
     case e: Elem => transformChildren(e)
