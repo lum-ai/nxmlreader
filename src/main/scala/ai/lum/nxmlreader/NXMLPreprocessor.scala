@@ -22,6 +22,10 @@ case class NXMLPreprocessor(
     case <sup>{text}</sup> => <sup> {transformText(text.text)} </sup>
     case <sub>{text}</sub> => <sub> {transformText(text.text)} </sub>
 
+    // remove latex and tables from text
+    case <tex-math>{text}</tex-math> => Nil
+    case e: Elem if e.label == "table-wrap" => Nil // FIXME this is removing captions too
+
     // append dots to title and surround it with newlines
     case e: Elem if e.label == "article-title" =>
       val e2 = transformChildren(e)
