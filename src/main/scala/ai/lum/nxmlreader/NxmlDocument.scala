@@ -92,6 +92,17 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
       case n if n.label == "title" =>
         val string = n.text
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
+      case n if n.label == "p" && n.child.exists(_.label == "xref") =>
+        val children = n.child.toList.map { c =>
+          val string = c.text
+          val attributes = c.attributes.map(b => b.key -> b.value.text).toMap
+          new Terminal(c.label, string, Interval.ofLength(index, string.length), attributes)
+        }
+        val attributes = n.attributes.map(b => (b.key -> b.value.text)).toMap
+        Some(new NonTerminal(n.label, children, attributes))
+      case n if n.label == "p" =>
+        val string = n.text
+        Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
       case n if n.label == "xref" =>
         val string = n.text
         val attributes = n.attributes.map(b => b.key -> b.value.text).toMap
