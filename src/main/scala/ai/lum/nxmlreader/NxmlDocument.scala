@@ -85,7 +85,7 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
         val children = n.child.toList.flatMap { c =>
           val t = mkTree(c, idx)
           if (t.isDefined) {
-            idx = t.get.interval.end
+            idx = t.get.characterInterval.end
           }
           t
         }
@@ -99,9 +99,9 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0).get
     // some papers don't have an abstract
     // also, mkTree returns an Option, that is why we use flatMap
-    val paperAbstractOption = (newRoot \\ "abstract").headOption.flatMap(mkTree(_, paperTitle.interval.end))
+    val paperAbstractOption = (newRoot \\ "abstract").headOption.flatMap(mkTree(_, paperTitle.characterInterval.end))
     // next start is the end of the abstract if there is one, or the end of the title
-    val nextStart = paperAbstractOption.map(_.interval.end).getOrElse(paperTitle.interval.end)
+    val nextStart = paperAbstractOption.map(_.characterInterval.end).getOrElse(paperTitle.characterInterval.end)
     // sometimes the body is missing
     // sometimes the body is empty, this is handled by mkTree returning None
     val paperBodyOption = (newRoot \\ "body").headOption.flatMap(mkTree(_, nextStart))
