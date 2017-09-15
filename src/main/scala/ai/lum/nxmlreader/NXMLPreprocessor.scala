@@ -45,8 +45,10 @@ case class NXMLPreprocessor(
     // append newlines to paragraphs
     case e: Elem if e.label == "p" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"${transformText(e2.text)}\n\n")
-      <p>{txt}</p>
+      // FIXME make sure you call transformText() on the children
+      // val txt = Text(s"${transformText(e2.text)}\n\n")
+      // <p>{txt}</p>
+      e2
 
     // remove floats
     case e: Elem if ignoreFloats && attr(e, "position", "float") => Nil
@@ -58,26 +60,7 @@ case class NXMLPreprocessor(
     // remove some sections
     case e: Elem if sectionsToIgnore.contains(e.label) | attr(e, "sec-type", sectionsToIgnore) => Nil
 
-    // retain xref
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") =>
-      val e2 = transformChildren(e)
-      val txt = Text(transformText(e2.text))
-      <xref-bibr>{txt}</xref-bibr>
-
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") =>
-      val e2 = transformChildren(e)
-      val txt = Text(transformText(e2.text))
-      <xref-fig>{txt}</xref-fig>
-
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") =>
-      val e2 = transformChildren(e)
-      val txt = Text(transformText(e2.text))
-      <xref-table>{txt}</xref-table>
-
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") =>
-      val e2 = transformChildren(e)
-      val txt = Text(transformText(e2.text))
-      <xref-supplementary>{txt}</xref-supplementary>
+    case e: Elem if e.label == "xref" => e
 
     // recurse
     case e: Elem => transformChildren(e)
@@ -107,12 +90,4 @@ case class NXMLPreprocessor(
     e.attribute(name).exists(values contains _.text)
   }
 
-}
-
-object NXMLPreprocessor extends Preprocessor {
-  // These are strings serving as substitutions
-  val BIBR = "XREF_BIBR" // replaces a bibliography reference
-  val FIG = "XREF_FIG" // replaces a figure
-  val TABLE = "XREF_TABLE" // replaces a table
-  val SUPPL = "XREF_SUPPLEMENTARY" // replaces a supplementary material section
 }
