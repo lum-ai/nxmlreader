@@ -58,11 +58,26 @@ case class NXMLPreprocessor(
     // remove some sections
     case e: Elem if sectionsToIgnore.contains(e.label) | attr(e, "sec-type", sectionsToIgnore) => Nil
 
-    // surround replacements with spaces
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text(" " + NXMLPreprocessor.BIBR + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text(" " + NXMLPreprocessor.FIG + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text(" " + NXMLPreprocessor.TABLE + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text(" " + NXMLPreprocessor.SUPPL + " ")
+    // retain xref
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") =>
+      val e2 = transformChildren(e)
+      val txt = Text(transformText(e2.text))
+      <xref-bibr>{txt}</xref-bibr>
+
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") =>
+      val e2 = transformChildren(e)
+      val txt = Text(transformText(e2.text))
+      <xref-fig>{txt}</xref-fig>
+
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") =>
+      val e2 = transformChildren(e)
+      val txt = Text(transformText(e2.text))
+      <xref-table>{txt}</xref-table>
+
+    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") =>
+      val e2 = transformChildren(e)
+      val txt = Text(transformText(e2.text))
+      <xref-supplementary>{txt}</xref-supplementary>
 
     // recurse
     case e: Elem => transformChildren(e)
