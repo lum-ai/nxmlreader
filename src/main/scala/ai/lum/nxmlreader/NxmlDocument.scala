@@ -70,7 +70,7 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     else ""
   }
 
-  def mkStandoff(): Tree = {
+  private def mkStandoff(): Tree = {
     def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
