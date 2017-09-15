@@ -74,9 +74,11 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
-      case n if n.label == "title" | n.label == "p" =>
+      // FIXME: can we let n case handle p?
+      case n if n.label == "title" => // | n.label == "p" =>
         val string = n.text
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
+      // FIXME: shouldn't this be a terminal?  Isn't "title" such a case?
       case n if n.child.isEmpty =>
         // if nonterminal has no children, don't make a tree node
         None
@@ -89,6 +91,7 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
           }
           t
         }
+        // FIXME: is this ever triggered (see preceding case)?
         if (children.isEmpty) return None
         // Keep track of the tag's attributes as a Map[String, String]
         val attributes = n.attributes.map(b => (b.key -> b.value.text)).toMap
