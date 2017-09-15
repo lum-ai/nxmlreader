@@ -4,6 +4,8 @@ import scala.xml._
 import ai.lum.common.Interval
 import ai.lum.nxmlreader.standoff._
 
+import scala.annotation.tailrec
+
 
 class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
 
@@ -51,9 +53,18 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     xhtml = tbl \\ "table"
   } yield Table(id, label.text, getTextFrom(caption.head), xhtml.head)
 
-  def inTextCitations: Seq[Node] = for {
-    citation <- root \\ "xref-bibr"
-  } yield citation
+  def inTextCitations: Seq[Tree] = {
+    val xrefs = findXrefs(Seq(standoff), Nil)
+    xrefs.filter(xref => xref.attributes("ref-type") == "bibr")
+  }
+
+  @tailrec
+  private def findXrefs(remaining: Seq[Tree], results: Seq[Tree]): Seq[Tree] = remaining match {
+    case Seq() => results
+    case (n:NonTerminal) +: rest => findXrefs(n.children ++ rest, results)
+    case (t:Terminal) +: rest if t.label == "xref" => findXrefs(rest, t +: results)
+    case (t:Terminal) +: rest => findXrefs(rest, results)
+  }
 
   def references: Seq[Reference] = for {
     ref <- root \ "back" \ "ref-list" \ "ref"
@@ -78,11 +89,13 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
-      // FIXME: can we let n case handle p?
-      case n if n.label == "title" => // | n.label == "p" =>
+      case n if n.label == "title" =>
         val string = n.text
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
-      // FIXME: shouldn't this be a terminal?  Isn't "title" such a case?
+      case n if n.label == "xref" =>
+        val string = n.text
+        val attributes = n.attributes.map(b => b.key -> b.value.text).toMap
+        Some(new Terminal(n.label, string, Interval.ofLength(index, string.length), attributes))
       case n if n.child.isEmpty =>
         // if nonterminal has no children, don't make a tree node
         None
@@ -95,7 +108,6 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
           }
           t
         }
-        // FIXME: is this ever triggered (see preceding case)?
         if (children.isEmpty) return None
         // Keep track of the tag's attributes as a Map[String, String]
         val attributes = n.attributes.map(b => (b.key -> b.value.text)).toMap

@@ -76,11 +76,11 @@ class NonTerminal(
 class Terminal(
     val label: String,
     val text: String,
-    val characterInterval: Interval
+    val characterInterval: Interval,
+    val attributes: Map[String, String] = Map.empty
 ) extends Tree {
 
   val children: List[Tree] = Nil
-  val attributes: Map[String, String] = Map()
 
   def copy(): Tree = new Terminal(label, text, characterInterval)
 
