@@ -51,6 +51,10 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     xhtml = tbl \\ "table"
   } yield Table(id, label.text, getTextFrom(caption.head), xhtml.head)
 
+  def inTextCitations: Seq[Node] = for {
+    citation <- root \\ "xref-bibr"
+  } yield citation
+
   def references: Seq[Reference] = for {
     ref <- root \ "back" \ "ref-list" \ "ref"
     id = ref \@ "id"
