@@ -1,10 +1,23 @@
 package ai.lum.nxmlreader
 
-import scala.xml.{Elem, Node, Text}
+import scala.util.matching.Regex
+import scala.util.matching.Regex.Match
+import scala.xml.{ Elem, Node, Text }
 import scala.xml.transform.RewriteRule
 
 
 trait Preprocessor extends RewriteRule
+
+object PreprocessorUtils {
+
+  // We have a problem with media, in which the XML parser barfs on the inclusion of a newline
+  def preParseHook(text: String): String = {
+    def replaceNewlines(m: Match): String = m.matched.replaceAllLiterally("\n", " ")
+    val mediaFix = new Regex("<media>.*?</media>")
+    mediaFix.replaceAllIn(text, m => replaceNewlines(m))
+  }
+
+}
 
 case class NXMLPreprocessor(
   sectionsToIgnore: Set[String],
