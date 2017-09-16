@@ -1,8 +1,6 @@
 package ai.lum.nxmlreader
 
 import java.io.{ File, InputStream, Reader }
-import scala.xml._
-import scala.xml.transform.RewriteRule
 
 
 class NxmlReader(val preprocessor: Preprocessor) {

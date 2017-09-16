@@ -4,6 +4,8 @@ import scala.xml._
 import ai.lum.common.Interval
 import ai.lum.nxmlreader.standoff._
 
+import scala.annotation.tailrec
+
 
 class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
 
@@ -51,6 +53,19 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     xhtml = tbl \\ "table"
   } yield Table(id, label.text, getTextFrom(caption.head), xhtml.head)
 
+  def inTextCitations: Seq[Tree] = {
+    val xrefs = findXrefs(Seq(standoff), Nil)
+    xrefs.filter(xref => xref.attributes("ref-type") == "bibr")
+  }
+  
+  @tailrec
+  final def findXrefs(remaining: Seq[Tree], results: Seq[Tree]): Seq[Tree] = remaining match {
+    case Seq() => results
+    case (n:NonTerminal) +: rest => findXrefs(n.children ++ rest, results)
+    case (t:Terminal) +: rest if t.label == "xref" => findXrefs(rest, t +: results)
+    case (t:Terminal) +: rest => findXrefs(rest, results)
+  }
+
   def references: Seq[Reference] = for {
     ref <- root \ "back" \ "ref-list" \ "ref"
     id = ref \@ "id"
@@ -70,13 +85,21 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     else ""
   }
 
-  def mkStandoff(): Tree = {
+  private def mkStandoff(): Tree = {
     def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
-      case n if n.label == "title" | n.label == "p" =>
+      case n if n.label == "title" =>
         val string = n.text
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
+      case n if n.label == "xref" =>
+        val string = n.text
+        if (string.length > 0) {
+          val attributes = n.attributes.map(b => b.key -> b.value.text).toMap
+          Some(new Terminal(n.label, string, Interval.ofLength(index, string.length), attributes))
+        } else {
+          None
+        }
       case n if n.child.isEmpty =>
         // if nonterminal has no children, don't make a tree node
         None
@@ -85,7 +108,7 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
         val children = n.child.toList.flatMap { c =>
           val t = mkTree(c, idx)
           if (t.isDefined) {
-            idx = t.get.interval.end
+            idx = t.get.characterInterval.end
           }
           t
         }
@@ -99,9 +122,9 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     val paperTitle = mkTree((newRoot \\ "article-title").head, 0).get
     // some papers don't have an abstract
     // also, mkTree returns an Option, that is why we use flatMap
-    val paperAbstractOption = (newRoot \\ "abstract").headOption.flatMap(mkTree(_, paperTitle.interval.end))
+    val paperAbstractOption = (newRoot \\ "abstract").headOption.flatMap(mkTree(_, paperTitle.characterInterval.end))
     // next start is the end of the abstract if there is one, or the end of the title
-    val nextStart = paperAbstractOption.map(_.interval.end).getOrElse(paperTitle.interval.end)
+    val nextStart = paperAbstractOption.map(_.characterInterval.end).getOrElse(paperTitle.characterInterval.end)
     // sometimes the body is missing
     // sometimes the body is empty, this is handled by mkTree returning None
     val paperBodyOption = (newRoot \\ "body").headOption.flatMap(mkTree(_, nextStart))

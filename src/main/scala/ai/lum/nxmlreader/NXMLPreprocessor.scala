@@ -1,6 +1,6 @@
 package ai.lum.nxmlreader
 
-import scala.xml.{Elem, Node, Text}
+import scala.xml.{ Elem, Node, Text }
 import scala.xml.transform.RewriteRule
 
 
@@ -45,8 +45,10 @@ case class NXMLPreprocessor(
     // append newlines to paragraphs
     case e: Elem if e.label == "p" =>
       val e2 = transformChildren(e)
-      val txt = Text(s"${transformText(e2.text)}\n\n")
-      <p>{txt}</p>
+      // FIXME make sure you call transformText() on the children
+      // val txt = Text(s"${transformText(e2.text)}\n\n")
+      // <p>{txt}</p>
+      e2
 
     // remove floats
     case e: Elem if ignoreFloats && attr(e, "position", "float") => Nil
@@ -58,11 +60,7 @@ case class NXMLPreprocessor(
     // remove some sections
     case e: Elem if sectionsToIgnore.contains(e.label) | attr(e, "sec-type", sectionsToIgnore) => Nil
 
-    // surround replacements with spaces
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "bibr") => Text(" " + NXMLPreprocessor.BIBR + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "fig") => Text(" " + NXMLPreprocessor.FIG + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "table") => Text(" " + NXMLPreprocessor.TABLE + " ")
-    case e: Elem if e.label == "xref" && attr(e, "ref-type", "supplementary-material") => Text(" " + NXMLPreprocessor.SUPPL + " ")
+    case e: Elem if e.label == "xref" => e
 
     // recurse
     case e: Elem => transformChildren(e)
@@ -92,12 +90,4 @@ case class NXMLPreprocessor(
     e.attribute(name).exists(values contains _.text)
   }
 
-}
-
-object NXMLPreprocessor extends Preprocessor {
-  // These are strings serving as substitutions
-  val BIBR = "XREF_BIBR" // replaces a bibliography reference
-  val FIG = "XREF_FIG" // replaces a figure
-  val TABLE = "XREF_TABLE" // replaces a table
-  val SUPPL = "XREF_SUPPLEMENTARY" // replaces a supplementary material section
 }

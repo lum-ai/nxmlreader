@@ -10,7 +10,7 @@ sealed trait Tree {
 
   def label: String
   def text: String
-  def interval: Interval
+  def characterInterval: Interval
   def children: List[Tree]
   def attributes: Map[String, String]
   def copy(): Tree
@@ -25,7 +25,7 @@ sealed trait Tree {
   }
 
   def getTerminals(): List[Terminal] = {
-    getTerminals(interval)
+    getTerminals(characterInterval)
   }
 
   def root: Tree = parent match {
@@ -54,14 +54,14 @@ class NonTerminal(
   // set children's parent to self
   children.foreach(_._parent = Some(this))
 
-  val interval: Interval = Interval.union(children.map(_.interval))
+  val characterInterval: Interval = Interval.union(children.map(_.characterInterval))
 
   def text: String = children.map(_.text).mkString
 
   def copy(): Tree = new NonTerminal(label, children.map(_.copy()), attributes)
 
   def getTerminals(i: Interval): List[Terminal] = {
-    if (i intersects interval) {
+    if (i intersects characterInterval) {
       for {
         c <- children
         t <- c.getTerminals(i)
@@ -76,16 +76,16 @@ class NonTerminal(
 class Terminal(
     val label: String,
     val text: String,
-    val interval: Interval
+    val characterInterval: Interval,
+    val attributes: Map[String, String] = Map.empty
 ) extends Tree {
 
   val children: List[Tree] = Nil
-  val attributes: Map[String, String] = Map()
 
-  def copy(): Tree = new Terminal(label, text, interval)
+  def copy(): Tree = new Terminal(label, text, characterInterval)
 
   def getTerminals(i: Interval): List[Terminal] = {
-    if (i intersects interval) List(this) else Nil
+    if (i intersects characterInterval) List(this) else Nil
   }
 
 }
