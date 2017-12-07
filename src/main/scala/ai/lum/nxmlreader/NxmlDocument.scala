@@ -57,13 +57,13 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     val xrefs = findXrefs(Seq(standoff), Nil)
     xrefs.filter(xref => xref.attributes("ref-type") == "bibr")
   }
-  
+
   @tailrec
   final def findXrefs(remaining: Seq[Tree], results: Seq[Tree]): Seq[Tree] = remaining match {
     case Seq() => results
     case (n:NonTerminal) +: rest => findXrefs(n.children ++ rest, results)
     case (t:Terminal) +: rest if t.label == "xref" => findXrefs(rest, t +: results)
-    case (t:Terminal) +: rest => findXrefs(rest, results)
+    case (_:Terminal) +: rest => findXrefs(rest, results)
   }
 
   def references: Seq[Reference] = for {
