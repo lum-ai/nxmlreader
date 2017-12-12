@@ -4,7 +4,9 @@ name := "nxmlreader"
 
 organization := "ai.lum"
 
-scalaVersion := "2.11.8"
+// scalaVersion := "2.11.11"
+scalaVersion := "2.12.4"
+crossScalaVersions := Seq("2.11.11", "2.12.4")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -19,8 +21,8 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "ai.lum" %% "common" % "0.0.7",
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.5"
+  "ai.lum" %% "common" % "0.0.8",
+  "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
 )
 
 releaseProcess := Seq[ReleaseStep](
