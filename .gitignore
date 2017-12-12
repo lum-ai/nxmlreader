@@ -1,11 +1,5 @@
 *.class
 *.log
-.idea
-.idea/*
-*.iml
-.#*
-Makefile
-.DS_Store
 
 # sbt specific
 .cache
