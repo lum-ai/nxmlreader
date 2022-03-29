@@ -28,8 +28,8 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     (journalMeta \ "issn").filter(_ \@ "pub-type" == pubType).text
   }
 
-  def ppub: String = getIssnByType("ppub")
-  def epub: String = getIssnByType("epub")
+  def pIssn: String = getIssnByType("ppub")
+  def eIssn: String = getIssnByType("epub")
 
   def publisher: String = (journalMeta \ "publisher" \ "publisher-name").text
 
