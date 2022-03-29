@@ -9,7 +9,29 @@ import scala.annotation.tailrec
 
 class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
 
+  def journalMeta: Node = (root \\ "front" \ "journal-meta").head
   def articleMeta: Node = (root \\ "front" \ "article-meta").head
+
+  def getJournalIdByType(idType: String): String = {
+    (journalMeta \ "journal-id").filter(_ \@ "journal-id-type" == idType).text
+  }
+
+  def nlm: String = getJournalIdByType("nlm-ta")
+  def iso: String = getJournalIdByType("iso-abbrev")
+
+  def journalTitle: String = (journalMeta \ "journal-title")
+    .headOption
+    .getOrElse(journalMeta \ "journal-title-group" \ "journal-title")
+    .text
+
+  def getIssnByType(pubType: String): String = {
+    (journalMeta \ "issn").filter(_ \@ "pub-type" == pubType).text
+  }
+
+  def ppub: String = getIssnByType("ppub")
+  def epub: String = getIssnByType("epub")
+
+  def publisher: String = (journalMeta \ "publisher" \ "publisher-name").text
 
   def getIdByType(idType: String): String = {
     (articleMeta \ "article-id").filter(_ \@ "pub-id-type" == idType).text
