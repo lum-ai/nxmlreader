@@ -21,7 +21,7 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "ai.lum" %% "common" % "0.0.8",
+  "ai.lum" %% "common" % "0.1.6",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
 )
 
