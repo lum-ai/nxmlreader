@@ -111,12 +111,14 @@ class NxmlDocument(val root: Node, val preprocessor: Preprocessor) {
     def mkTree(node: Node, index: Int): Option[Tree] = node match {
       case n @ Text(string) =>
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
+      case n:Atom[String] =>
+        Some(new Terminal(n.label, n.data, Interval.ofLength(index, n.data.length)))
       case n if n.label == "title" =>
         val string = n.text
         Some(new Terminal(n.label, string, Interval.ofLength(index, string.length)))
       case n if n.label == "xref" =>
         val string = n.text
-        if (string.length > 0) {
+        if (string.nonEmpty) {
           val attributes = n.attributes.map(b => b.key -> b.value.text).toMap
           Some(new Terminal(n.label, string, Interval.ofLength(index, string.length), attributes))
         } else {
